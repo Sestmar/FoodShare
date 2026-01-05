@@ -54,5 +54,5 @@ El proyecto ha sido desarrollado siguiendo las mejores prácticas de la industri
 ---
 
 ## 👨‍💻 Autor
-Desarrollado por **[Tu Nombre]** como Proyecto Final de Ciclo.
-*Contacto: [Tu Email o LinkedIn]*
+Desarrollado por **Sergio Estudillo** como Proyecto Final de Ciclo.
+*Contacto (LinkedIn): Sergio Estudillo Marabot. Enlace --> https://www.linkedin.com/in/sergio-estudillo-marabot-6562331b7/
