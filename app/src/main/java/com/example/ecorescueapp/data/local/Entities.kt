@@ -16,10 +16,13 @@ data class UserEntity(
 @Entity(tableName = "donations")
 data class DonationEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val title: String,          // Ej: "Pack Sorpresa Panadería"
-    val description: String,    // Ej: "Contiene 2 barras y 3 croissants"
-    val expirationDate: String, // Guardaremos fechas como String "30/01/2026" para simplificar
-    val donorName: String,      // Nombre del comercio que dona
-    val isReserved: Boolean = false, // false = disponible, true = reservado
-    val reservedByUserId: Int? = null // Null si nadie lo ha reservado aún
+    val title: String,
+    val description: String,
+    val expirationDate: String,
+    val donorName: String,
+    val isReserved: Boolean = false,
+    val reservedBy: String? = null,
+    val pickupCode: String? = null,
+    val isCompleted: Boolean = false // NUEVO CAMPO: Para saber si ya se entregó y guardarlo en el historial
+
 )

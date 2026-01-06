@@ -13,10 +13,11 @@ class LoginViewModel @Inject constructor(
     private val repository: EcoRepository
 ) : ViewModel() {
 
-    // Función para crear datos falsos y poder probar la app rápido
+    // Función auxiliar para poblar la BBDD con datos de prueba
+    // Útil para demostraciones rápidas sin tener que registrarse manualmente
     fun seedDatabase() {
         viewModelScope.launch {
-            // Usuario Comercio (Admin)
+            // Creamos el Usuario Comercio (Admin)
             repository.registerUser(
                 UserEntity(
                     email = "pan@eco.com",
@@ -25,7 +26,7 @@ class LoginViewModel @Inject constructor(
                     password = "123"
                 )
             )
-            // Usuario Voluntario (User)
+            // Creamos el Usuario Voluntario (User)
             repository.registerUser(
                 UserEntity(
                     email = "juan@eco.com",
@@ -37,16 +38,18 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    // Función para iniciar sesión
+    // Lógica de inicio de sesión
     fun login(email: String, pass: String, onLoginSuccess: (String) -> Unit, onError: () -> Unit) {
         viewModelScope.launch {
-            // Buscamos el usuario en la BBDD real
+            // Consultamos al repositorio si el email existe
             val user = repository.login(email)
 
-            // Verificamos que exista y que la contraseña coincida
+            // Validamos que el usuario exista y la contraseña sea correcta
             if (user != null && user.password == pass) {
+                // Devolvemos el rol (ADMIN o USER) para navegar a la pantalla correcta
                 onLoginSuccess(user.role)
             } else {
+                // Notificamos error a la vista
                 onError()
             }
         }

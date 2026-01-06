@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp // Icono actualizado
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Info // Icono de ayuda
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,8 +26,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.ecorescueapp.data.local.DonationEntity
 import com.example.ecorescueapp.ui.components.DonationCard
-import com.example.ecorescueapp.ui.components.InfoDialog // <--- ¡IMPORTANTE! Asegúrate de tener este archivo creado
+import com.example.ecorescueapp.ui.components.InfoDialog
 import com.example.ecorescueapp.ui.navigation.Screen
 import com.example.ecorescueapp.ui.viewmodel.AdminViewModel
 
@@ -37,13 +38,18 @@ fun AdminHomeScreen(
     navController: NavController,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    // Estado para el diálogo de ayuda
+    // --- ESTADOS DE UI ---
     var showHelp by remember { mutableStateOf(false) }
+
+    // Estados para el Ciclo de Recogida (Validar Entrega)
+    var showCodeDialog by remember { mutableStateOf<DonationEntity?>(null) }
+    var inputCode by remember { mutableStateOf("") }
 
     // Variables del formulario
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
+
     val context = LocalContext.current
 
     // Listas y Filtros
@@ -68,17 +74,14 @@ fun AdminHomeScreen(
             TopAppBar(
                 title = { Text("Panel Comercio 🏪") },
                 actions = {
-                    // Botón Ayuda (RA6)
                     IconButton(onClick = { showHelp = true }) {
                         Icon(Icons.Default.Info, contentDescription = "Ayuda")
                     }
-                    // Botón Informes (RA5)
                     IconButton(onClick = { navController.navigate(Screen.Report.route) }) {
                         Icon(Icons.Default.Assessment, contentDescription = "Ver Informes")
                     }
-                    // Botón Salir
                     IconButton(onClick = { navController.navigate(Screen.Login.route) }) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Salir")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir")
                     }
                 }
             )
@@ -152,7 +155,7 @@ fun AdminHomeScreen(
                 Text("Publicar Donación")
             }
 
-            Divider(modifier = Modifier.padding(vertical = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
             // --- FILTROS (RA5.c) ---
             Text("Mis Donaciones Activas", style = MaterialTheme.typography.titleMedium)
@@ -226,21 +229,75 @@ fun AdminHomeScreen(
                             }
                         },
                         content = {
-                            DonationCard(donation = item)
+                            // AQUÍ USAMOS LA NUEVA LÓGICA DE LA TARJETA
+                            DonationCard(
+                                donation = item,
+                                isAdmin = true, // Es Admin
+                                onActionClick = {
+                                    // Al pulsar "Validar Entrega", abrimos el diálogo
+                                    showCodeDialog = item
+                                    inputCode = ""
+                                }
+                            )
                         }
                     )
                 }
             }
         }
 
-        // --- DIÁLOGO DE AYUDA (Aquí es donde se muestra) ---
+        // --- DIÁLOGO DE AYUDA (RA6) ---
         if (showHelp) {
             InfoDialog(
                 title = "Ayuda del Panel ℹ️",
-                desc = "• Usa el micrófono 🎙️ para dictar descripciones de productos.\n" +
-                        "• Desliza una tarjeta para borrarla, tanto izquierda como derecha.\n" +
-                        "• Usa los chips Verde(DISPONIBLES) / Rojo(RESERVADOS) para filtrar pedidos.",
+                desc = "• Usa el micrófono 🎙️ para dictar descripciones.\n" +
+                        "• Desliza para borrar (Swipe).\n" +
+                        "• Si un pedido está reservado (Rojo), pulsa 'Validar' y pide el código al voluntario para completar la entrega.",
                 onDismiss = { showHelp = false }
+            )
+        }
+
+        // --- DIÁLOGO DE VALIDACIÓN DE CÓDIGO (NUEVO) ---
+        if (showCodeDialog != null) {
+            AlertDialog(
+                onDismissRequest = { showCodeDialog = null },
+                title = { Text("Entregar Pedido 📦") },
+                text = {
+                    Column {
+                        Text("Pide el código al voluntario:")
+                        Text(
+                            text = showCodeDialog?.reservedBy ?: "Anónimo",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = inputCode,
+                            onValueChange = { if (it.length <= 4) inputCode = it },
+                            label = { Text("Código (ej: 1234)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            // Llamamos al ViewModel para comprobar
+                            val success = viewModel.completeDonation(showCodeDialog!!, inputCode)
+                            if (success) {
+                                Toast.makeText(context, "¡Entrega completada! 🎉", Toast.LENGTH_SHORT).show()
+                                showCodeDialog = null
+                            } else {
+                                Toast.makeText(context, "Código incorrecto.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text("Validar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCodeDialog = null }) { Text("Cancelar") }
+                }
             )
         }
     }

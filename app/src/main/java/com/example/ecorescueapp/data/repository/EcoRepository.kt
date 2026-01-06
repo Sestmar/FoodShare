@@ -1,40 +1,59 @@
 package com.example.ecorescueapp.data.repository
 
-import com.example.ecorescueapp.data.local.EcoDao
+import com.example.ecorescueapp.data.local.DonationDao
 import com.example.ecorescueapp.data.local.DonationEntity
 import com.example.ecorescueapp.data.local.UserEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import javax.inject.Singleton
 
-// @Inject le dice a Hilt: "Busca el Dao que creamos en AppModule y úsalo aquí"
+@Singleton
 class EcoRepository @Inject constructor(
-    private val ecoDao: EcoDao
+    private val ecoDao: DonationDao
 ) {
 
-    // --- USUARIOS ---
-    suspend fun registerUser(user: UserEntity) {
-        ecoDao.insertUser(user)
+    // --- FUNCIONES DE DONACIONES ---
+
+    // Obtener solo las activas (Para la Home Screen)
+    fun getActiveDonations(): Flow<List<DonationEntity>> {
+        return ecoDao.getActiveDonations()
     }
 
-    suspend fun login(email: String): UserEntity? {
-        return ecoDao.getUserByEmail(email)
+    // Obtener historial completo (Para Gráficas y Mis Pedidos)
+    fun getAllHistory(): Flow<List<DonationEntity>> {
+        return ecoDao.getAllHistory()
     }
 
-    // --- DONACIONES ---
+    // Publicar una donación
     suspend fun addDonation(donation: DonationEntity) {
         ecoDao.insertDonation(donation)
     }
 
-    // Flow permite que la lista se actualice sola en la pantalla
-    fun getAllDonations(): Flow<List<DonationEntity>> {
-        return ecoDao.getAllDonations()
-    }
-
-    suspend fun updateDonation(donation: DonationEntity) {
-        ecoDao.updateDonation(donation)
-    }
-
+    // Eliminar una donación (Manual)
     suspend fun deleteDonation(donation: DonationEntity) {
         ecoDao.deleteDonation(donation)
+    }
+
+    // Reservar donación (Fase 1)
+    suspend fun reserveDonation(id: Int, userName: String, code: String) {
+        ecoDao.updateReservation(id, true, userName, code)
+    }
+
+    // Completar/Entregar donación (Fase 2)
+    suspend fun completeDonation(id: Int) {
+        ecoDao.markAsCompleted(id)
+    }
+
+
+    // --- FUNCIONES DE USUARIO ---
+
+    // Crear un usuario nuevo
+    suspend fun registerUser(user: UserEntity) {
+        ecoDao.insertUser(user)
+    }
+
+    // Login
+    suspend fun login(email: String): UserEntity? {
+        return ecoDao.getUserByEmail(email)
     }
 }

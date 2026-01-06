@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.ecorescueapp.data.local.DonationEntity
 import com.example.ecorescueapp.data.repository.EcoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -14,17 +13,20 @@ class UserViewModel @Inject constructor(
     private val repository: EcoRepository
 ) : ViewModel() {
 
-    // Obtenemos todas para ver también las que ya están reservadas (feedback visual)
-    val donations: Flow<List<DonationEntity>> = repository.getAllDonations()
+    // Lista principal (solo disponibles/reservadas activas)
+    val donations = repository.getActiveDonations()
+
+    // Lista completa (para el historial de pedidos) -> ESTA ES LA NUEVA
+    val allHistory = repository.getAllHistory()
 
     fun reserveDonation(donation: DonationEntity) {
         viewModelScope.launch {
-            // Creamos una copia de la donación cambiando solo el estado
-            val updatedDonation = donation.copy(
-                isReserved = true,
-                reservedByUserId = 2 // Hardcodeamos el ID del usuario Juan por rapidez
-            )
-            repository.updateDonation(updatedDonation)
+            // Generamos código aleatorio
+            val code = (1000..9999).random().toString()
+            // Simulamos usuario (en una app real vendría del Auth)
+            val mockUser = "Voluntario Juan"
+
+            repository.reserveDonation(donation.id, mockUser, code)
         }
     }
 }

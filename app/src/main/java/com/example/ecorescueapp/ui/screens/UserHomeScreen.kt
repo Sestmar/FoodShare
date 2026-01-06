@@ -4,18 +4,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.ecorescueapp.ui.components.DonationCard // <--- IMPORTANTE
+import com.example.ecorescueapp.ui.components.DonationCard
+import com.example.ecorescueapp.ui.components.InfoDialog
 import com.example.ecorescueapp.ui.navigation.Screen
 import com.example.ecorescueapp.ui.viewmodel.UserViewModel
 
@@ -27,13 +26,24 @@ fun UserHomeScreen(
 ) {
     val donations by viewModel.donations.collectAsState(initial = emptyList())
 
+    // State for contextual help (RA6)
+    var showHelp by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Donaciones Disponibles 🌍") },
+                title = { Text("Zona Voluntarios 🌍") },
                 actions = {
+                    // Help Button
+                    IconButton(onClick = { showHelp = true }) {
+                        Icon(Icons.Default.Info, contentDescription = "Ayuda")
+                    }
+                    // Exit Button
                     IconButton(onClick = { navController.navigate(Screen.Login.route) }) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Salir")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir")
+                    }
+                    IconButton(onClick = { navController.navigate(Screen.UserHistory.route) }) {
+                        Icon(Icons.Default.History, contentDescription = "Historial") // Necesitas importar History
                     }
                 }
             )
@@ -52,30 +62,27 @@ fun UserHomeScreen(
             }
 
             items(donations) { item ->
-                // AQUÍ USAMOS EL COMPONENTE REUTILIZABLE (RA3.b)
+                // CORRECTED CALL: Using the new parameters isAdmin and onActionClick
                 DonationCard(
                     donation = item,
-                    actionButton = {
-                        // Inyectamos el botón específico para el usuario
-                        Button(
-                            onClick = { viewModel.reserveDonation(item) },
-                            enabled = !item.isReserved,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (item.isReserved) Color.Gray else MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            if (item.isReserved) {
-                                Text("Ya reservado")
-                            } else {
-                                Icon(Icons.Default.Favorite, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Reservar Ahora")
-                            }
-                        }
+                    isAdmin = false, // We specify this is the User view, not Admin
+                    onActionClick = {
+                        // Action when pressing "Reserve"
+                        viewModel.reserveDonation(item)
                     }
                 )
             }
+        }
+
+        // Help Dialog
+        if (showHelp) {
+            InfoDialog(
+                title = "Ayuda Voluntarios ℹ️",
+                desc = "• Pulsa 'Reservar' en los productos disponibles (Verdes).\n" +
+                        "• Al reservar, recibirás un CÓDIGO SECRETO 🔒.\n" +
+                        "• Muestra ese código al comercio para recoger tu pedido.",
+                onDismiss = { showHelp = false }
+            )
         }
     }
 }

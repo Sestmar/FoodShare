@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.ecorescueapp.data.local.DonationEntity
 import com.example.ecorescueapp.data.repository.EcoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,20 +18,18 @@ class AdminViewModel @Inject constructor(
     private val repository: EcoRepository
 ) : ViewModel() {
 
-    // 1. Estado del filtro (Por defecto "TODOS")
     private val _currentFilter = MutableStateFlow("TODOS")
     val currentFilter = _currentFilter.asStateFlow()
 
-    // 2. Lista Inteligente: Combina los datos reales de BBDD con el filtro seleccionado
-    val donationList = repository.getAllDonations().combine(_currentFilter) { list, filter ->
+    // Lista de donaciones activas (No completadas) para el panel principal
+    val donationList = repository.getActiveDonations().combine(_currentFilter) { list, filter ->
         when (filter) {
             "DISPONIBLES" -> list.filter { !it.isReserved }
             "RESERVADOS" -> list.filter { it.isReserved }
-            else -> list // "TODOS" devuelve la lista completa
+            else -> list
         }
     }
 
-    // Función para que la UI cambie el filtro
     fun setFilter(filter: String) {
         _currentFilter.value = filter
     }
@@ -41,7 +41,8 @@ class AdminViewModel @Inject constructor(
                 description = desc,
                 expirationDate = date,
                 donorName = donor,
-                isReserved = false
+                isReserved = false,
+                isCompleted = false
             )
             repository.addDonation(newDonation)
         }
@@ -53,7 +54,35 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // Cálculos para el gráfico
+    // Validación de código y marcado como completado (venta realizada)
+    fun completeDonation(donation: DonationEntity, inputCode: String): Boolean {
+        if (donation.pickupCode == inputCode) {
+            viewModelScope.launch {
+                // Cambiamos el estado en la BBDD a Completado
+                repository.completeDonation(donation.id)
+            }
+            return true
+        }
+        return false
+    }
+
+    /**
+     * ESTADÍSTICAS REALES (RA5)
+     * Procesa todo el historial para diferenciar stock vs ventas éxito
+     */
+    fun getStatsFlow(): Flow<Pair<Int, Int>> {
+        return repository.getAllHistory().map { list ->
+            // Disponibles: Activos que no han sido reservados ni completados
+            val available = list.count { !it.isReserved && !it.isCompleted }
+
+            // Completadas: Ventas que pasaron la validación del código
+            val completed = list.count { it.isCompleted }
+
+            Pair(available, completed)
+        }
+    }
+
+    // Función auxiliar para tests unitarios
     fun getStats(donations: List<DonationEntity>): Pair<Int, Int> {
         val totalReserved = donations.count { it.isReserved }
         val totalAvailable = donations.count { !it.isReserved }

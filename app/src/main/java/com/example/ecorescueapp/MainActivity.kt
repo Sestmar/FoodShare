@@ -19,6 +19,7 @@ import com.example.ecorescueapp.ui.screens.AdminHomeScreen
 import com.example.ecorescueapp.ui.screens.LoginScreen
 import com.example.ecorescueapp.ui.screens.RegisterScreen
 import com.example.ecorescueapp.ui.screens.ReportScreen
+import com.example.ecorescueapp.ui.screens.UserHistoryScreen
 import com.example.ecorescueapp.ui.screens.UserHomeScreen
 import com.example.ecorescueapp.ui.theme.EcoRescueAppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,5 +51,6 @@ fun AppNavigation() {
         composable(Screen.UserHome.route) { UserHomeScreen(navController) }
         composable(Screen.Register.route) { RegisterScreen(navController) }
         composable(Screen.Report.route) { ReportScreen(navController) }
+        composable(Screen.UserHistory.route) { UserHistoryScreen(navController) }
     }
 }

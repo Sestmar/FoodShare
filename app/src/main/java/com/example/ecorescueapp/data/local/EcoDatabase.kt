@@ -2,10 +2,11 @@ package com.example.ecorescueapp.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.example.ecorescueapp.data.local.UserEntity
-import com.example.ecorescueapp.data.local.DonationEntity
 
-@Database(entities = [UserEntity::class, DonationEntity::class], version = 1, exportSchema = false)
+// Si UserEntity se pone en rojo, dale a Alt+Enter para importarla.
+@Database(entities = [DonationEntity::class, UserEntity::class], version = 3, exportSchema = false)
 abstract class EcoDatabase : RoomDatabase() {
-    abstract fun ecoDao(): EcoDao
+
+    // Llamada clave
+    abstract fun donationDao(): DonationDao
 }
