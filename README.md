@@ -1,4 +1,4 @@
-# 🍏 FoodShare - App de Gestión de Excedentes Alimentarios
+# FoodShare - App de Gestión de Excedentes Alimentarios
 
 > **Proyecto Final de Grado (TFG) - Desarrollo de Aplicaciones Multiplataforma**
 > *Conectando comercios locales con voluntarios para reducir el desperdicio de alimentos.*
@@ -10,24 +10,21 @@ La aplicación destaca por su **Accesibilidad** e **Interfaz Natural (NUI)**, pe
 
 ---
 
-## 🚀 Características Principales (Highlights)
+## Características Principales
 
-### 🔐 Seguridad y Biometría
-- **Login con Huella Dactilar:** Autenticación biométrica integrada para un acceso rápido y seguro sin contraseñas.
-- Gestión de roles (Administrador/Comercio y Usuario/Voluntario).
+### Ciclo de Logística Cerrada (Novedad)
+- **Validación por PIN de Seguridad:** Implementación de un flujo de verificación único. Cuando un voluntario reserva, se genera un código aleatorio que el comercio debe validar para completar la entrega.
+- **Historial de Pedidos:** Sección dedicada para el usuario donde puede consultar sus códigos activos y ver el estado de sus pedidos pasados con efectos visuales de opacidad.
+- **Soft Delete (Persistencia Histórica):** Los datos no se eliminan al finalizar una venta; se marcan como "Completados" para mantener la integridad de las métricas y el historial.
 
-### 🎙️ Interfaz Natural (NUI)
-- **Dictado por Voz:** Los comercios pueden dar de alta productos dictando su descripción gracias a la integración con Speech-to-Text.
-- **Control Gestual:** Eliminación de elementos mediante gestos de deslizamiento (*Swipe-to-Dismiss*) con retroalimentación visual.
-
-### 📊 Informes y Datos
-- **Generación de PDFs:** Creación automática de informes de impacto y donaciones guardados directamente en el dispositivo.
-- **Gráficos Integrados:** Visualización estadística del estado de las donaciones (Disponibles vs Reservadas).
-- **Filtrado Dinámico:** Sistema de Chips para filtrar listados en tiempo real.
+### Análisis de Impacto Avanzado
+- **Gráficos Circulares (Pie Chart):** Visualización avanzada mediante `Canvas` con animaciones de dibujo en tiempo real.
+- **Métricas de Éxito:** Cálculo dinámico del porcentaje de éxito (comida salvada vs. disponible).
+- **Exportación Profesional:** Generación de informes PDF con barra de progreso visual y metadatos del sistema.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 
 El proyecto ha sido desarrollado siguiendo las mejores prácticas de la industria y la arquitectura recomendada por Google:
 
@@ -41,7 +38,7 @@ El proyecto ha sido desarrollado siguiendo las mejores prácticas de la industri
 
 ---
 
-## 📸 Capturas de Pantalla
+## Capturas de Pantalla
 
 | Panel Comercio (Admin) | Dictado por Voz | Login Biométrico |
 |:---:|:---:|:---:|
@@ -53,6 +50,6 @@ El proyecto ha sido desarrollado siguiendo las mejores prácticas de la industri
 
 ---
 
-## 👨‍💻 Autor
+## Autor
 Desarrollado por **Sergio Estudillo** como Proyecto Final de Ciclo.
 *Contacto (LinkedIn): Sergio Estudillo Marabot. Enlace --> https://www.linkedin.com/in/sergio-estudillo-marabot-6562331b7/
