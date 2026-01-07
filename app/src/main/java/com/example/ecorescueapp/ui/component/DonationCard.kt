@@ -1,12 +1,15 @@
 package com.example.ecorescueapp.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory2 // Icono de Caja/Cantidad
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,7 +27,22 @@ import coil.compose.AsyncImage
 import com.example.ecorescueapp.data.local.DonationEntity
 import com.example.ecorescueapp.ui.theme.AcentoNaranja
 import com.example.ecorescueapp.ui.theme.VerdePrincipal
+import com.example.ecorescueapp.utils.QrCodeGenerator
 
+/**
+ * Componente UI reutilizable para mostrar la información de un producto.
+ * Adapta su diseño basándose en el rol del usuario (Admin/User) y el estado del producto.
+ *
+ * Características:
+ * - Carga asíncrona de imágenes con Coil.
+ * - Generación de Código QR para validación AR (Visión Artificial).
+ * - Indicadores de estado tipo "Semáforo" (Verde/Naranja).
+ * - Animaciones de elevación y sombra neón.
+ *
+ * @param donation Entidad con los datos del alimento.
+ * @param isAdmin Flag para determinar si mostrar controles de gestión o de reserva.
+ * @param onActionClick Lambda que se ejecuta al pulsar el botón principal.
+ */
 @Composable
 fun DonationCard(
     donation: DonationEntity,
@@ -112,7 +131,7 @@ fun DonationCard(
                     )
                 }
 
-                // --- 5. ZONA DE RESERVA / SEGURIDAD ---
+                // --- 5. ZONA DE RESERVA / SEGURIDAD (AR INCLUIDO) ---
                 if (donation.isReserved) {
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
@@ -129,25 +148,49 @@ fun DonationCard(
                             }
                         }
                     } else {
-                        // El Usuario ve su PIN
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Color.Black,
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, Color(0xFF00E5FF))
+                        // --- VISIÓN ARTIFICIAL: GENERACIÓN DE QR ---
+                        // El usuario ve su código QR para que el admin lo escanee
+                        val qrBitmap = remember(donation.pickupCode) {
+                            donation.pickupCode?.let { QrCodeGenerator.generateQrBitmap(it) }
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Lock, null, tint = Color(0xFF00E5FF))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "PIN RECOGIDA: ${donation.pickupCode}",
-                                    color = Color(0xFF00E5FF),
-                                    fontWeight = FontWeight.Black
+                            if (qrBitmap != null) {
+                                Image(
+                                    bitmap = qrBitmap.asImageBitmap(),
+                                    contentDescription = "QR de Recogida",
+                                    modifier = Modifier
+                                        .size(130.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.White) // Fondo blanco necesario para contraste del QR
+                                        .padding(4.dp)
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            // PIN de Texto como respaldo
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Color.Black,
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Color(0xFF00E5FF))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.QrCode, null, tint = Color(0xFF00E5FF))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "PIN: ${donation.pickupCode}",
+                                        color = Color(0xFF00E5FF),
+                                        fontWeight = FontWeight.Black
+                                    )
+                                }
                             }
                         }
                     }
@@ -172,9 +215,10 @@ fun DonationCard(
                         colors = ButtonDefaults.buttonColors(containerColor = AcentoNaranja),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Icon(Icons.Default.Verified, null, tint = Color.Black)
+                        // Icono QR para indicar que se puede escanear
+                        Icon(Icons.Default.QrCode, null, tint = Color.Black)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("VALIDAR ENTREGA", color = Color.Black, fontWeight = FontWeight.Black)
+                        Text("VALIDAR ENTREGA (SCAN)", color = Color.Black, fontWeight = FontWeight.Black)
                     }
                 }
             }

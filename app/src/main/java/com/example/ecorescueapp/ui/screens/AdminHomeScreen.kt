@@ -30,6 +30,8 @@ import com.example.ecorescueapp.ui.navigation.Screen
 import com.example.ecorescueapp.ui.theme.AcentoNaranja
 import com.example.ecorescueapp.ui.theme.VerdePrincipal
 import com.example.ecorescueapp.ui.viewmodel.AdminViewModel
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +55,16 @@ fun AdminHomeScreen(
     val context = LocalContext.current
     val donations by viewModel.donationList.collectAsState(initial = emptyList())
     val filter by viewModel.currentFilter.collectAsState()
+
+    // 1. LANZADOR DEL ESCÁNER QR (AR / Visión Artificial)
+    // Esto abre la cámara para leer el código del voluntario
+    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        if (result.contents != null) {
+            // Si el escáner lee algo, lo ponemos en la caja de texto automáticamente
+            inputCode = result.contents
+            Toast.makeText(context, "QR Detectado: ${result.contents}", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Lanzador Voz (Google Speech)
     val speechLauncher = rememberLauncherForActivityResult(
@@ -133,7 +145,6 @@ fun AdminHomeScreen(
             Button(
                 onClick = {
                     if (title.isNotEmpty() && quantity.isNotEmpty()) {
-                        // IMPORTANTE: Asegúrate de actualizar AdminViewModel para aceptar estos 4 parámetros
                         viewModel.addDonation(title, description, quantity, imageUrl)
                         title = ""; description = ""; quantity = ""; imageUrl = ""
                         Toast.makeText(context, "Publicado en FoodShare 🚀", Toast.LENGTH_SHORT).show()
@@ -194,25 +205,47 @@ fun AdminHomeScreen(
         if (showHelp) {
             InfoDialog(
                 title = "Ayuda FoodShare ℹ️",
-                desc = "• Dicta la descripción con 🎙️.\n• Desliza izq/der para borrar.\n• Para entregar: Pulsa 'Validar' y escribe el PIN del cliente.",
+                desc = "• Dicta la descripción con 🎙️.\n• Desliza izq/der para borrar.\n• Para entregar: Pulsa 'Validar' y usa el ESCÁNER QR o escribe el PIN.",
                 onDismiss = { showHelp = false }
             )
         }
 
+        // --- DIÁLOGO DE VALIDACIÓN (ACTUALIZADO CON ESCÁNER) ---
         if (showCodeDialog != null) {
             AlertDialog(
                 containerColor = Color(0xFF1A1A1A),
                 onDismissRequest = { showCodeDialog = null },
                 title = { Text("ENTREGAR PEDIDO 📦", color = AcentoNaranja) },
                 text = {
-                    Column {
-                        Text("Cliente solicitante:", color = Color.Gray)
-                        Text(showCodeDialog?.reservedBy ?: "Anónimo", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Cliente: ${showCodeDialog?.reservedBy ?: "Anónimo"}", color = Color.White, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(16.dp))
+
+                        // --- BOTÓN DE REALIDAD AUMENTADA (QR) ---
+                        Button(
+                            onClick = {
+                                val options = ScanOptions()
+                                options.setPrompt("Enfoca el QR del voluntario")
+                                options.setBeepEnabled(true)
+                                options.setOrientationLocked(false)
+                                scanLauncher.launch(options)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                        ) {
+                            Icon(Icons.Default.QrCodeScanner, null, tint = VerdePrincipal)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("ESCANEAR QR (AR)", color = VerdePrincipal)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("- O escribe el PIN manualmente -", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+
                         OutlinedTextField(
                             value = inputCode, onValueChange = { if (it.length <= 4) inputCode = it },
                             label = { Text("Código PIN") },
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AcentoNaranja, unfocusedBorderColor = Color.Gray)
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AcentoNaranja, unfocusedBorderColor = Color.Gray),
+                            singleLine = true
                         )
                     }
                 },
@@ -224,7 +257,7 @@ fun AdminHomeScreen(
                         } else {
                             Toast.makeText(context, "PIN Incorrecto", Toast.LENGTH_SHORT).show()
                         }
-                    }, colors = ButtonDefaults.buttonColors(containerColor = AcentoNaranja)) { Text("VALIDAR", color = Color.Black) }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = AcentoNaranja)) { Text("VALIDAR ENTREGA", color = Color.Black) }
                 },
                 dismissButton = { TextButton(onClick = { showCodeDialog = null }) { Text("Cancelar") } }
             )

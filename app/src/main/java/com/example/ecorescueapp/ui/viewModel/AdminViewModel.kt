@@ -13,6 +13,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * ViewModel principal para la gestión del comercio (Admin).
+ * Implementa la lógica de negocio para:
+ * - Publicación de ofertas con validación de datos.
+ * - Filtrado reactivo de listas mediante StateFlow.
+ * - Validación de seguridad (PIN) para la entrega de pedidos.
+ *
+ * @property repository Repositorio de datos (Inyectado por Hilt).
+ */
+
 @HiltViewModel
 class AdminViewModel @Inject constructor(
     private val repository: EcoRepository
@@ -21,7 +31,10 @@ class AdminViewModel @Inject constructor(
     private val _currentFilter = MutableStateFlow("TODOS")
     val currentFilter = _currentFilter.asStateFlow()
 
-    // Lista filtrada para la UI
+    /**
+     * Combina el flujo de datos de la BBDD con el filtro seleccionado por el usuario.
+     * Utiliza [combine] para reactividad en tiempo real.
+     */
     val donationList = repository.getActiveDonations().combine(_currentFilter) { list, filter ->
         when (filter) {
             "DISPONIBLES" -> list.filter { !it.isReserved }
@@ -56,6 +69,15 @@ class AdminViewModel @Inject constructor(
             repository.deleteDonation(donation)
         }
     }
+
+    /**
+     * Valida el código de recogida (PIN) proporcionado por el voluntario.
+     * Si es correcto, marca la transacción como completada en la BBDD.
+     *
+     * @param donation La entidad a validar.
+     * @param inputCode El PIN introducido manualmente.
+     * @return true si el código coincide, false en caso contrario.
+     */
 
     fun completeDonation(donation: DonationEntity, inputCode: String): Boolean {
         if (donation.pickupCode == inputCode) {

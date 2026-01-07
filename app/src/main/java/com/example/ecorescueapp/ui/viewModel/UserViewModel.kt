@@ -18,11 +18,11 @@ class UserViewModel @Inject constructor(
     // Lista de productos disponibles (Verdes)
     val donations = repository.getActiveDonations()
 
-    // --- CORRECCIÓN DE PRIVACIDAD ---
-    // Filtramos el historial para mostrar SOLO los pedidos del usuario actual
+    // FILTRADO DE SEGURIDAD
+    // Utilizamos .map para transformar el flujo de datos original.
+    // Solo permitimos que pasen a la UI los pedidos que coincidan con el usuario activo.
     val allHistory = repository.getAllHistory().map { list ->
         list.filter { item ->
-            // Mostramos si el usuario coincide O si es el usuario de pruebas (para demos)
             item.reservedBy == CurrentUser.activeUser
         }
     }

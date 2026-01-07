@@ -7,6 +7,12 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
+/**
+ * Gestiona la autenticación biométrica utilizando la API de AndroidX Biometric.
+ * Permite el acceso seguro mediante huella dactilar o reconocimiento facial
+ * dependiendo del hardware del dispositivo.
+ */
+
 object BiometricAuth {
 
     // Comprueba si el móvil tiene sensor de huellas configurado

@@ -24,7 +24,7 @@ object AppModule {
             EcoDatabase::class.java,
             "foodshare_database" // Le ponemos nombre nuevo para que empiece limpia
         )
-            .fallbackToDestructiveMigration() // Esto evita crashes si cambias tablas
+            .fallbackToDestructiveMigration() // Esto evita crashes al cambiar tablas
             .build()
     }
 
