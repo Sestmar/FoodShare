@@ -1,4 +1,3 @@
-
 package com.example.ecorescueapp.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,16 +11,24 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.example.ecorescueapp.ui.theme.AcentoNaranja
+import com.example.ecorescueapp.ui.theme.VerdePrincipal
 
+/**
+ * RA5.e: Incluyo gráficos generados a partir de los datos.
+ * Componente personalizado con Canvas para visualizar el estado del stock.
+ * He añadido soporte para visualizar "Reservados" además de disponibles y vendidos.
+ */
 @Composable
 fun PieChart(
     available: Int,
+    reserved: Int,
     completed: Int,
     modifier: Modifier = Modifier
 ) {
-    val total = (available + completed).toFloat()
+    val total = (available + reserved + completed).toFloat()
 
-    // Animación para que el gráfico se "dibuje" al abrir la pantalla
+    // Animación de entrada suave
     var animationPlayed by remember { mutableStateOf(false) }
     val animateSize by animateFloatAsState(
         targetValue = if (animationPlayed) 1f else 0f,
@@ -31,39 +38,55 @@ fun PieChart(
 
     LaunchedEffect(Unit) { animationPlayed = true }
 
-    Canvas(modifier = modifier.size(200.dp)) {
+    Canvas(modifier = modifier.size(220.dp)) {
         val chartSize = size.minDimension
         val radius = chartSize / 2
+        val strokeWidth = 50.dp.toPx()
 
         if (total == 0f) {
-            // Si no hay datos, dibujamos un círculo gris suave
             drawCircle(
-                color = Color.LightGray,
+                color = Color.DarkGray.copy(alpha = 0.3f),
                 radius = radius,
-                style = Stroke(width = 40.dp.toPx())
+                style = Stroke(width = strokeWidth)
             )
         } else {
             val availableAngle = (available / total) * 360f
+            val reservedAngle = (reserved / total) * 360f
             val completedAngle = (completed / total) * 360f
 
-            // 1. Arco de Ventas Completadas (Azul/Éxito)
+            var currentAngle = -90f
+
+            // 1. COMPLETADOS (Azul - Éxito)
             drawArc(
                 color = Color(0xFF2196F3),
-                startAngle = -90f,
+                startAngle = currentAngle,
                 sweepAngle = completedAngle * animateSize,
                 useCenter = false,
-                style = Stroke(width = 45.dp.toPx()),
+                style = Stroke(width = strokeWidth),
                 size = Size(chartSize, chartSize),
                 topLeft = Offset((size.width - chartSize) / 2, (size.height - chartSize) / 2)
             )
+            currentAngle += completedAngle * animateSize
 
-            // 2. Arco de Disponibles (Verde)
+            // 2. RESERVADOS (Naranja - Pendiente)
             drawArc(
-                color = Color(0xFF4CAF50),
-                startAngle = -90f + (completedAngle * animateSize),
+                color = AcentoNaranja,
+                startAngle = currentAngle,
+                sweepAngle = reservedAngle * animateSize,
+                useCenter = false,
+                style = Stroke(width = strokeWidth),
+                size = Size(chartSize, chartSize),
+                topLeft = Offset((size.width - chartSize) / 2, (size.height - chartSize) / 2)
+            )
+            currentAngle += reservedAngle * animateSize
+
+            // 3. DISPONIBLES (Verde - Stock)
+            drawArc(
+                color = VerdePrincipal,
+                startAngle = currentAngle,
                 sweepAngle = availableAngle * animateSize,
                 useCenter = false,
-                style = Stroke(width = 45.dp.toPx()),
+                style = Stroke(width = strokeWidth),
                 size = Size(chartSize, chartSize),
                 topLeft = Offset((size.width - chartSize) / 2, (size.height - chartSize) / 2)
             )

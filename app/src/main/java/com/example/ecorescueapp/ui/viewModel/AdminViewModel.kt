@@ -15,14 +15,11 @@ import javax.inject.Inject
 
 /**
  * ViewModel principal para la gestión del comercio (Admin).
- * Implementa la lógica de negocio para:
- * - Publicación de ofertas con validación de datos.
- * - Filtrado reactivo de listas mediante StateFlow.
- * - Validación de seguridad (PIN) para la entrega de pedidos.
+ * Implemento la lógica de negocio para gestionar el ciclo de vida de las donaciones.
  *
+ * RA3.e: Utilizo clases y métodos para gestionar la lógica de la aplicación.
  * @property repository Repositorio de datos (Inyectado por Hilt).
  */
-
 @HiltViewModel
 class AdminViewModel @Inject constructor(
     private val repository: EcoRepository
@@ -32,8 +29,9 @@ class AdminViewModel @Inject constructor(
     val currentFilter = _currentFilter.asStateFlow()
 
     /**
-     * Combina el flujo de datos de la BBDD con el filtro seleccionado por el usuario.
-     * Utiliza [combine] para reactividad en tiempo real.
+     * RA5.c: Establezco filtros sobre los valores a presentar.
+     * Combino el flujo de datos de la BBDD con el filtro seleccionado por el usuario
+     * para ofrecer una interfaz reactiva.
      */
     val donationList = repository.getActiveDonations().combine(_currentFilter) { list, filter ->
         when (filter) {
@@ -47,16 +45,15 @@ class AdminViewModel @Inject constructor(
         _currentFilter.value = filter
     }
 
-    // --- CORRECCIÓN DEL ERROR DE COMPILACIÓN DE LA IMAGEN ---
-    // Cambiamos 'date' por 'quantity' y añadimos 'imageUrl'
+    // RA1.f: Modifico el código para adaptar la creación de entidades con imagen y cantidad.
     fun addDonation(title: String, desc: String, quantity: String, imageUrl: String) {
         viewModelScope.launch {
             val newDonation = DonationEntity(
                 title = title,
                 description = desc,
-                quantity = quantity,       // Usamos el campo correcto de la BBDD
-                imageUrl = imageUrl,       // Usamos el campo correcto de la BBDD
-                donorName = "FoodShare Local", // O podrías usar CurrentUser.activeUser si el admin se loguea
+                quantity = quantity,
+                imageUrl = imageUrl,
+                donorName = "FoodShare Local",
                 isReserved = false,
                 isCompleted = false
             )
@@ -71,14 +68,11 @@ class AdminViewModel @Inject constructor(
     }
 
     /**
-     * Valida el código de recogida (PIN) proporcionado por el voluntario.
-     * Si es correcto, marca la transacción como completada en la BBDD.
+     * RA2.f / RA3.d: Implemento la validación de seguridad (PIN/QR).
+     * Si el código coincide, marco la transacción como completada (Soft Delete).
      *
-     * @param donation La entidad a validar.
-     * @param inputCode El PIN introducido manualmente.
-     * @return true si el código coincide, false en caso contrario.
+     * @return true si el código coincide y se procesa la entrega.
      */
-
     fun completeDonation(donation: DonationEntity, inputCode: String): Boolean {
         if (donation.pickupCode == inputCode) {
             viewModelScope.launch {
@@ -89,12 +83,27 @@ class AdminViewModel @Inject constructor(
         return false
     }
 
-    // Estadísticas para el ReportScreen
-    fun getStatsFlow(): Flow<Pair<Int, Int>> {
+    /**
+     * RA5.d: Incluyo valores calculados y recuentos totales.
+     * Proceso el historial completo para diferenciar los tres estados clave del negocio:
+     * 1. Disponibles (Stock actual)
+     * 2. Reservados (En tránsito, pendiente de entrega)
+     * 3. Completados (Ventas finalizadas con éxito)
+     *
+     * @return Flow con Triple(Disponibles, Reservados, Completados)
+     */
+    fun getStatsFlow(): Flow<Triple<Int, Int, Int>> {
         return repository.getAllHistory().map { list ->
+            // Disponibles: Ni reservados ni completados
             val available = list.count { !it.isReserved && !it.isCompleted }
+
+            // Reservados: Reservados pero NO completados (Pendientes)
+            val reserved = list.count { it.isReserved && !it.isCompleted }
+
+            // Completados: Ventas cerradas
             val completed = list.count { it.isCompleted }
-            Pair(available, completed)
+
+            Triple(available, reserved, completed)
         }
     }
 }
