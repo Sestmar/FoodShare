@@ -59,6 +59,7 @@ fun FloatingFoodBackground() {
     }
 }
 
+// Fragmento de código del motor de partículas
 @Composable
 fun FloatingIconItem(
     icon: ImageVector,

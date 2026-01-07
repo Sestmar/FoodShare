@@ -33,18 +33,41 @@ import com.example.ecorescueapp.ui.theme.VerdePrincipal
 import com.example.ecorescueapp.ui.viewmodel.LoginViewModel
 import com.example.ecorescueapp.utils.BiometricAuth
 
+/**
+ * Defino la pantalla de inicio de sesión de mi aplicación.
+ * En esta pantalla, gestiono la entrada de credenciales del usuario,
+ * la autenticación biométrica y la navegación a las pantallas principales
+ * después de un inicio de sesión exitoso.
+ *
+ * @param navController El controlador de navegación que utilizo para moverme entre pantallas.
+ * @param viewModel El ViewModel que contiene la lógica de negocio para el inicio de sesión.
+ */
 @Composable
 fun LoginScreen(
     navController: NavController,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
+    /**
+     * Declaro los estados para el correo electrónico, la contraseña y la disponibilidad
+     * de la autenticación biométrica. Utilizo `remember` y `mutableStateOf`
+     * para que la UI se recomponga automáticamente cuando estos valores cambien.
+     */
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var canUseBiometric by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    /**
+     * Utilizo `LaunchedEffect` para comprobar si la autenticación biométrica está
+     * disponible en el dispositivo tan pronto como se compone la pantalla.
+     * Esto lo hago solo una vez gracias a `Unit` como clave.
+     */
     LaunchedEffect(Unit) { canUseBiometric = BiometricAuth.canAuthenticate(context) }
 
+    /**
+     * Construyo la UI principal de la pantalla. Un `Box` que ocupa toda la pantalla
+     * con un fondo oscuro y un efecto de comida flotante para un diseño atractivo.
+     */
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -52,6 +75,10 @@ fun LoginScreen(
     ) {
         FloatingFoodBackground()
 
+        /**
+         * Centro el contenido de la pantalla de inicio de sesión, tanto vertical
+         * como horizontalmente, utilizando una `Column`.
+         */
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -59,6 +86,10 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            /**
+             * Muestro el logo de mi aplicación. He diseñado un `Box` circular con
+             * una sombra de color neón y un borde para que destaque.
+             */
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -70,7 +101,7 @@ fun LoginScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Restaurant,
-                    contentDescription = null,
+                    contentDescription = null, // El icono es puramente decorativo.
                     tint = VerdePrincipal,
                     modifier = Modifier.size(60.dp)
                 )
@@ -78,6 +109,10 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            /**
+             * Muestro el nombre de la aplicación y el eslogan. Utilizo diferentes
+             * estilos de texto para crear una jerarquía visual.
+             */
             Text(
                 text = "FoodShare",
                 style = MaterialTheme.typography.displaySmall,
@@ -93,6 +128,10 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
+            /**
+             * Defino un estilo personalizado para los `OutlinedTextField` para que
+             * coincidan con la estética de neón y oscuridad de la aplicación.
+             */
             val textFieldColors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = VerdePrincipal,
                 unfocusedBorderColor = Color.DarkGray,
@@ -105,6 +144,10 @@ fun LoginScreen(
                 unfocusedContainerColor = Color(0xFF1E1E1E)
             )
 
+            /**
+             * Campo de texto para que el usuario introduzca su email.
+             * Se actualiza el estado `email` en cada cambio.
+             */
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -116,6 +159,10 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            /**
+             * Campo de texto para la contraseña. Utilizo `PasswordVisualTransformation`
+             * para ocultar los caracteres que el usuario escribe.
+             */
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -128,6 +175,11 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            /**
+             * Este es mi botón de inicio de sesión principal. Lo he envuelto en un
+             * `NeonBorderBox` para darle un efecto brillante. Al hacer clic,
+             * invoco el método `login` del ViewModel.
+             */
             NeonBorderBox(
                 modifier = Modifier.fillMaxWidth(),
                 color = VerdePrincipal
@@ -135,8 +187,19 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         viewModel.login(email, password,
-                            onLoginSuccess = { role -> navController.navigate(if (role == "ADMIN") Screen.AdminHome.route else Screen.UserHome.route) },
-                            onError = { Toast.makeText(context, "Error credenciales", Toast.LENGTH_SHORT).show() }
+                            onLoginSuccess = { role ->
+                                /**
+                                 * Si el inicio de sesión es exitoso, navego a la pantalla
+                                 * correspondiente según el rol del usuario (Admin o User).
+                                 */
+                                navController.navigate(if (role == "ADMIN") Screen.AdminHome.route else Screen.UserHome.route)
+                            },
+                            onError = {
+                                /**
+                                 * Si hay un error, muestro un mensaje Toast.
+                                 */
+                                Toast.makeText(context, "Error credenciales", Toast.LENGTH_SHORT).show()
+                            }
                         )
                     },
                     modifier = Modifier
@@ -151,11 +214,19 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            /**
+             * Muestro el botón de autenticación biométrica solo si el dispositivo
+             * lo soporta.
+             */
             if (canUseBiometric) {
                 OutlinedButton(
                     onClick = {
                         val activity = context.findActivity()
                         if (activity != null) {
+                            /**
+                             * Inicio el proceso de autenticación biométrica.
+                             * Navego a la pantalla de administrador si tiene éxito.
+                             */
                             BiometricAuth.authenticate(activity,
                                 onSuccess = {
                                     Toast.makeText(context, "Acceso Concedido", Toast.LENGTH_SHORT).show()
@@ -177,12 +248,20 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            /**
+             * Un botón de texto que permite al usuario navegar a la pantalla de registro
+             * para crear una nueva cuenta.
+             */
             TextButton(onClick = { navController.navigate(Screen.Register.route) }) {
                 Text("Crear cuenta nueva", color = Color.Gray)
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
+            /**
+             * He añadido un botón de desarrollo para cargar datos de demostración
+             * en la base de datos. Esto me facilita las pruebas.
+             */
             TextButton(onClick = { viewModel.seedDatabase(); Toast.makeText(context, "Datos cargados", Toast.LENGTH_SHORT).show() }) {
                 Text("🛠️ Cargar Datos Demo", color = Color.DarkGray, fontSize = 12.sp)
             }
@@ -190,6 +269,13 @@ fun LoginScreen(
     }
 }
 
+/**
+ * He creado esta función de extensión para encontrar la `FragmentActivity`
+ * a partir de un `Context`. Es necesaria para poder mostrar el diálogo
+ * de autenticación biométrica.
+ *
+ * @return La `FragmentActivity` si se encuentra, o `null` en caso contrario.
+ */
 fun Context.findActivity(): FragmentActivity? {
     var context = this
     while (context is ContextWrapper) {
