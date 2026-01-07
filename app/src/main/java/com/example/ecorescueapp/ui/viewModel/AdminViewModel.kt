@@ -21,7 +21,7 @@ class AdminViewModel @Inject constructor(
     private val _currentFilter = MutableStateFlow("TODOS")
     val currentFilter = _currentFilter.asStateFlow()
 
-    // Lista de donaciones activas (No completadas) para el panel principal
+    // Lista filtrada para la UI
     val donationList = repository.getActiveDonations().combine(_currentFilter) { list, filter ->
         when (filter) {
             "DISPONIBLES" -> list.filter { !it.isReserved }
@@ -34,13 +34,16 @@ class AdminViewModel @Inject constructor(
         _currentFilter.value = filter
     }
 
-    fun addDonation(title: String, desc: String, date: String, donor: String) {
+    // --- CORRECCIÓN DEL ERROR DE COMPILACIÓN DE LA IMAGEN ---
+    // Cambiamos 'date' por 'quantity' y añadimos 'imageUrl'
+    fun addDonation(title: String, desc: String, quantity: String, imageUrl: String) {
         viewModelScope.launch {
             val newDonation = DonationEntity(
                 title = title,
                 description = desc,
-                expirationDate = date,
-                donorName = donor,
+                quantity = quantity,       // Usamos el campo correcto de la BBDD
+                imageUrl = imageUrl,       // Usamos el campo correcto de la BBDD
+                donorName = "FoodShare Local", // O podrías usar CurrentUser.activeUser si el admin se loguea
                 isReserved = false,
                 isCompleted = false
             )
@@ -54,11 +57,9 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // Validación de código y marcado como completado (venta realizada)
     fun completeDonation(donation: DonationEntity, inputCode: String): Boolean {
         if (donation.pickupCode == inputCode) {
             viewModelScope.launch {
-                // Cambiamos el estado en la BBDD a Completado
                 repository.completeDonation(donation.id)
             }
             return true
@@ -66,26 +67,12 @@ class AdminViewModel @Inject constructor(
         return false
     }
 
-    /**
-     * ESTADÍSTICAS REALES (RA5)
-     * Procesa todo el historial para diferenciar stock vs ventas éxito
-     */
+    // Estadísticas para el ReportScreen
     fun getStatsFlow(): Flow<Pair<Int, Int>> {
         return repository.getAllHistory().map { list ->
-            // Disponibles: Activos que no han sido reservados ni completados
             val available = list.count { !it.isReserved && !it.isCompleted }
-
-            // Completadas: Ventas que pasaron la validación del código
             val completed = list.count { it.isCompleted }
-
             Pair(available, completed)
         }
-    }
-
-    // Función auxiliar para tests unitarios
-    fun getStats(donations: List<DonationEntity>): Pair<Int, Int> {
-        val totalReserved = donations.count { it.isReserved }
-        val totalAvailable = donations.count { !it.isReserved }
-        return Pair(totalAvailable, totalReserved)
     }
 }

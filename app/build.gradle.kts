@@ -59,6 +59,10 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.appcompat)
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
+
+    // Carga de imagenes con coil
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
     // --- BOM (GESTIONA LAS VERSIONES DE COMPOSE) ---
     implementation(platform(libs.androidx.compose.bom))

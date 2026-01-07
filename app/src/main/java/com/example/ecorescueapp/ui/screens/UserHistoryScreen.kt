@@ -1,6 +1,7 @@
 package com.example.ecorescueapp.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,18 +10,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.ecorescueapp.ui.theme.AcentoNaranja
-import com.example.ecorescueapp.ui.theme.FondoTarjetas
 import com.example.ecorescueapp.ui.viewmodel.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,96 +34,148 @@ fun UserHistoryScreen(
     navController: NavController,
     viewModel: UserViewModel = hiltViewModel()
 ) {
-    val allDonations by viewModel.allHistory.collectAsState(initial = emptyList())
-    val myOrders = allDonations.filter { it.isReserved || it.isCompleted }
+    val myOrders by viewModel.allHistory.collectAsState(initial = emptyList())
+    val cyanCyber = Color(0xFF00E5FF) // Color temático para el historial
 
     Scaffold(
+        containerColor = Color(0xFF0D0D0D), // Fondo Negro FoodShare
         topBar = {
             TopAppBar(
-                title = { Text("Mis Pedidos 🎒", fontWeight = FontWeight.Bold) },
+                title = { Text("MIS PEDIDOS 🎒", fontWeight = FontWeight.Black) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Black,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = cyanCyber
+                ),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
                 }
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize()
-        ) {
-            items(myOrders) { item ->
+        LazyColumn(modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize()) {
 
-                // --- AQUÍ IMPLEMENTAMOS LA ANIMACIÓN ---
+            if (myOrders.isEmpty()) {
+                item {
+                    Text(
+                        "No tienes pedidos activos.",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 20.dp)
+                    )
+                }
+            }
+
+            items(myOrders) { item ->
+                // Animación de opacidad si está completado
                 val alphaAnim by animateFloatAsState(
-                    targetValue = if (item.isCompleted) 0.6f else 1f,
-                    label = "alphaAnimation"
+                    targetValue = if (item.isCompleted) 0.5f else 1f, label = ""
                 )
 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .alpha(alphaAnim), // <--- APLICAMOS EL ALPHA AQUÍ
+                        .padding(vertical = 12.dp)
+                        .alpha(alphaAnim)
+                        .shadow(
+                            elevation = if (item.isCompleted) 0.dp else 10.dp,
+                            spotColor = cyanCyber,
+                            shape = RoundedCornerShape(16.dp)
+                        ),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (item.isCompleted) Color(0xFFE0E0E0) else FondoTarjetas
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    // ESTILO UNIFICADO: Fondo oscuro
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+                    border = BorderStroke(1.dp, if (item.isCompleted) Color.DarkGray else cyanCyber.copy(0.5f))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = item.title,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.weight(1f))
+                    Column {
+                        // --- FOTO DEL PRODUCTO EN HISTORIAL (Estética unificada) ---
+                        AsyncImage(
+                            model = item.imageUrl ?: "https://images.unsplash.com/photo-1542831371-29b0f74f9713",
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                            contentScale = ContentScale.Crop
+                        )
 
-                            if (item.isCompleted) {
-                                Badge(containerColor = Color.Gray) {
-                                    Text("RECOGIDO", color = Color.White, modifier = Modifier.padding(4.dp))
-                                }
-                            } else {
-                                Badge(containerColor = AcentoNaranja) {
-                                    Text("PENDIENTE", color = Color.White, modifier = Modifier.padding(4.dp))
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    item.title.uppercase(),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White
+                                )
+                                Spacer(Modifier.weight(1f))
+
+                                if (item.isCompleted) {
+                                    Badge(containerColor = Color.DarkGray) {
+                                        Text("HISTÓRICO", color = Color.White, modifier = Modifier.padding(4.dp))
+                                    }
+                                } else {
+                                    Badge(containerColor = AcentoNaranja) {
+                                        Text("ACTIVO", color = Color.Black, modifier = Modifier.padding(4.dp), fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = item.description, style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        if (!item.isCompleted) {
+                            // Cantidad y Descripción
+                            Text("CANTIDAD: ${item.quantity}", color = cyanCyber, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                            Text(item.description, color = Color.LightGray, style = MaterialTheme.typography.bodyMedium)
+
                             Spacer(modifier = Modifier.height(16.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
+
+                            if (!item.isCompleted) {
+                                // --- ESTADO: PENDIENTE DE RECOGIDA ---
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = Color.Black,
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, cyanCyber)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.Lock, null, tint = cyanCyber)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "PIN: ${item.pickupCode}",
+                                            color = cyanCyber,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Muestra este código en el establecimiento.",
+                                    color = Color.Gray,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                            } else {
+                                // --- ESTADO: COMPLETADO (Texto Cambiado) ---
                                 Row(
-                                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(24.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
+                                    // CAMBIO DE TEXTO SOLICITADO:
                                     Text(
-                                        text = "CÓDIGO: ${item.pickupCode}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        "PEDIDO ACEPTADO",
+                                        color = Color(0xFF4CAF50),
+                                        fontWeight = FontWeight.Black,
+                                        style = MaterialTheme.typography.titleMedium
                                     )
                                 }
-                            }
-                        } else {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Entregado con éxito", color = Color(0xFF4CAF50), fontWeight = FontWeight.Medium)
                             }
                         }
                     }

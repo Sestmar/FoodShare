@@ -10,13 +10,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.ecorescueapp.ui.navigation.Screen
+import com.example.ecorescueapp.ui.theme.VerdePrincipal
 import com.example.ecorescueapp.ui.viewmodel.LoginViewModel
 import com.example.ecorescueapp.utils.BiometricAuth
 
@@ -27,129 +30,82 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
-    // Estado para saber si el móvil soporta huella
     var canUseBiometric by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
 
-    // Comprobamos compatibilidad biométrica al iniciar la pantalla
-    LaunchedEffect(Unit) {
-        canUseBiometric = BiometricAuth.canAuthenticate(context)
-    }
+    LaunchedEffect(Unit) { canUseBiometric = BiometricAuth.canAuthenticate(context) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(text = "EcoRescue 🌱", style = MaterialTheme.typography.headlineLarge)
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Contraseña") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // --- BOTÓN LOGIN CLÁSICO ---
-        Button(
-            onClick = {
-                viewModel.login(
-                    email = email,
-                    pass = password,
-                    onLoginSuccess = { role ->
-                        if (role == "ADMIN") {
-                            navController.navigate(Screen.AdminHome.route)
-                        } else {
-                            navController.navigate(Screen.UserHome.route)
-                        }
-                    },
-                    onError = {
-                        Toast.makeText(context, "Error: Credenciales incorrectas", Toast.LENGTH_SHORT).show()
-                    }
-                )
-            },
-            modifier = Modifier.fillMaxWidth()
+    Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0D0D0D)) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text("Iniciar Sesión")
-        }
+            Text(text = "FoodShare 🌱", style = MaterialTheme.typography.displayMedium, color = VerdePrincipal, fontWeight = FontWeight.Bold)
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        // --- NUEVO BOTÓN BIOMÉTRICO (RA2.e) ---
-        if (canUseBiometric) {
-            OutlinedButton(
+            OutlinedTextField(
+                value = email, onValueChange = { email = it },
+                label = { Text("Email") }, modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = VerdePrincipal)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = password, onValueChange = { password = it },
+                label = { Text("Contraseña") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = VerdePrincipal)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
                 onClick = {
-                    // USAMOS LA FUNCIÓN DE ABAJO PARA ENCONTRAR LA ACTIVIDAD CORRECTAMENTE
-                    val activity = context.findActivity()
-
-                    if (activity != null) {
-                        BiometricAuth.authenticate(
-                            activity = activity,
-                            onSuccess = {
-                                Toast.makeText(context, "¡Huella verificada! 🔓", Toast.LENGTH_SHORT).show()
-                                navController.navigate(Screen.AdminHome.route)
-                            },
-                            onError = {
-                                Toast.makeText(context, "No se pudo verificar la huella", Toast.LENGTH_SHORT).show()
-                            }
-                        )
-                    } else {
-                        Toast.makeText(context, "Error interno: Activity no encontrada", Toast.LENGTH_SHORT).show()
-                    }
+                    viewModel.login(email, password,
+                        onLoginSuccess = { role -> navController.navigate(if (role == "ADMIN") Screen.AdminHome.route else Screen.UserHome.route) },
+                        onError = { Toast.makeText(context, "Error credenciales", Toast.LENGTH_SHORT).show() }
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(Icons.Default.Fingerprint, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Entrar con Huella")
-            }
+                colors = ButtonDefaults.buttonColors(containerColor = VerdePrincipal)
+            ) { Text("INICIAR SESIÓN", color = Color.Black) }
+
             Spacer(modifier = Modifier.height(16.dp))
-        }
 
-        // --- REGISTRO ---
-        TextButton(
-            onClick = { navController.navigate(Screen.Register.route) }
-        ) {
-            Text("¿No tienes cuenta? Regístrate aquí")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // BOTÓN MÁGICO DE PRUEBAS
-        OutlinedButton(
-            onClick = {
-                viewModel.seedDatabase()
-                Toast.makeText(context, "Datos cargados (pan@eco.com / juan@eco.com)", Toast.LENGTH_LONG).show()
+            if (canUseBiometric) {
+                OutlinedButton(
+                    onClick = {
+                        val activity = context.findActivity()
+                        if (activity != null) {
+                            BiometricAuth.authenticate(activity,
+                                onSuccess = {
+                                    Toast.makeText(context, "Acceso Huella Correcto", Toast.LENGTH_SHORT).show()
+                                    navController.navigate(Screen.AdminHome.route)
+                                },
+                                onError = { Toast.makeText(context, "Error Huella", Toast.LENGTH_SHORT).show() }
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = VerdePrincipal),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, VerdePrincipal)
+                ) {
+                    Icon(Icons.Default.Fingerprint, null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("ENTRAR CON HUELLA")
+                }
             }
-        ) {
-            Text("🛠️ Cargar Datos de Prueba")
+
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(onClick = { navController.navigate(Screen.Register.route) }) { Text("¿No tienes cuenta? Regístrate aquí", color = Color.Gray) }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { viewModel.seedDatabase(); Toast.makeText(context, "Datos cargados", Toast.LENGTH_SHORT).show() }, colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)) { Text("🛠️ CARGAR DATOS DE PRUEBA") }
         }
     }
 }
 
-// --- FUNCIÓN AUXILIAR IMPRESCINDIBLE ---
-// Ayuda a encontrar la Actividad real aunque estemos dentro de temas o wrappers de Compose
 fun Context.findActivity(): FragmentActivity? {
     var context = this
     while (context is ContextWrapper) {

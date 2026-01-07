@@ -3,7 +3,9 @@ package com.example.ecorescueapp
 import com.example.ecorescueapp.data.local.DonationEntity
 import com.example.ecorescueapp.data.repository.EcoRepository
 import com.example.ecorescueapp.ui.viewmodel.AdminViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -12,39 +14,45 @@ import org.mockito.kotlin.mock
 
 class AdminViewModelTest {
 
-    // Activamos la regla que creaste antes para manejar hilos
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `getStats cuenta correctamente disponibles y reservados`() {
-        // 1. PREPARACIÓN (GIVEN)
-        // Creamos una lista falsa con: 2 disponibles (verde) y 1 reservado (rojo)
-        val fakeDonations = listOf(
-            DonationEntity(title = "Pan", isReserved = false, description = "", expirationDate = "", donorName = ""),
-            DonationEntity(title = "Manzanas", isReserved = false, description = "", expirationDate = "", donorName = ""),
-            DonationEntity(title = "Leche", isReserved = true, description = "", expirationDate = "", donorName = "")
+    fun `getStatsFlow calcula correctamente disponibles y completados`() = runTest {
+        // 1. GIVEN (Preparación)
+        // Creamos datos falsos con la NUEVA estructura (Quantity, ImageUrl, isCompleted)
+        val fakeHistory = listOf(
+            // Disponibles (Ni reservados ni completados)
+            DonationEntity(title = "Pan", quantity = "1", description = "", donorName = "", isReserved = false, isCompleted = false),
+            DonationEntity(title = "Agua", quantity = "1", description = "", donorName = "", isReserved = false, isCompleted = false),
+
+            // Completado (Venta finalizada)
+            DonationEntity(title = "Leche", quantity = "1", description = "", donorName = "", isReserved = true, isCompleted = true),
+
+            // Reservado pero no completado (En tránsito)
+            DonationEntity(title = "Arroz", quantity = "1", description = "", donorName = "", isReserved = true, isCompleted = false)
         )
 
-        // Creamos un Repositorio Falso (Mock) que devuelva nuestra lista
+        // Mock del repositorio devolviendo el flujo
         val mockRepo = mock<EcoRepository> {
-            on { getAllDonations() } doReturn flowOf(fakeDonations)
+            on { getAllHistory() } doReturn flowOf(fakeHistory)
+            // Necesario para que el init del ViewModel no falle
+            on { getActiveDonations() } doReturn flowOf(emptyList())
         }
 
-        // Iniciamos el ViewModel con el repo falso
         val viewModel = AdminViewModel(mockRepo)
 
-        // 2. EJECUCIÓN (WHEN)
-        // Probamos la función matemática
-        val stats = viewModel.getStats(fakeDonations)
+        // 2. WHEN (Ejecución)
+        // Obtenemos el primer valor emitido por el flujo de estadísticas
+        val stats = viewModel.getStatsFlow().first()
 
-        // 3. VERIFICACIÓN (THEN)
-        // Le preguntamos al test: "¿Ha contado 2 disponibles?"
-        assertEquals(2, stats.first)
+        // 3. THEN (Verificación)
+        // Disponibles esperados: 2 (Pan, Agua)
+        assertEquals("Debe haber 2 disponibles", 2, stats.first)
 
-        // "¿Ha contado 1 reservado?"
-        assertEquals(1, stats.second)
+        // Completados esperados: 1 (Leche) -> El gráfico de tarta muestra ÉXITO
+        assertEquals("Debe haber 1 completado", 1, stats.second)
 
-        println("TEST PASADO: Detectados ${stats.first} disponibles y ${stats.second} reservados.")
+        println("✅ TEST ADMIN PASADO: Stats calculadas correctamente.")
     }
 }
