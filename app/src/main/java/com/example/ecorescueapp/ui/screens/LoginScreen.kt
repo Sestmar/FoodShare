@@ -28,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.ecorescueapp.ui.component.FloatingFoodBackground
 import com.example.ecorescueapp.ui.component.NeonBorderBox
+import com.example.ecorescueapp.ui.components.FloatingParticles
 import com.example.ecorescueapp.ui.navigation.Screen
 import com.example.ecorescueapp.ui.theme.VerdePrincipal
 import com.example.ecorescueapp.ui.viewmodel.LoginViewModel
@@ -73,12 +74,14 @@ fun LoginScreen(
             .fillMaxSize()
             .background(Color(0xFF0D0D0D))
     ) {
+        // partículas flotantes
+        FloatingParticles(
+            particleCount = 20,
+            color = VerdePrincipal.copy(alpha = 0.35f)
+        )
+
         FloatingFoodBackground()
 
-        /**
-         * Centro el contenido de la pantalla de inicio de sesión, tanto vertical
-         * como horizontalmente, utilizando una `Column`.
-         */
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ecorescueapp.ui.navigation.Screen
+import com.example.ecorescueapp.ui.screens.AdminHistoryScreen
 import com.example.ecorescueapp.ui.screens.AdminHomeScreen
 import com.example.ecorescueapp.ui.screens.LoginScreen
 import com.example.ecorescueapp.ui.screens.RegisterScreen
@@ -53,5 +54,6 @@ fun AppNavigation() {
         composable(Screen.Register.route) { RegisterScreen(navController) }
         composable(Screen.Report.route) { ReportScreen(navController) }
         composable(Screen.UserHistory.route) { UserHistoryScreen(navController) }
+        composable(Screen.AdminHistory.route) { AdminHistoryScreen(navController) }
     }
 }

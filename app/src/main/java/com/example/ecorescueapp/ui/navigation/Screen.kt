@@ -6,5 +6,6 @@ sealed class Screen(val route: String) {
     object AdminHome : Screen("admin_home") // Pantalla del Comercio
     object UserHome : Screen("user_home")   // Pantalla del Voluntario
     object Report : Screen("report") // pantalla de reportes por PDF
-    object UserHistory : Screen("user_history_screen")
+    object UserHistory : Screen("user_history_screen") // pantalla de historial de pedidos (usuario)
+    object AdminHistory : Screen("admin_history") // pantalla de historial de pedidos (admin)
 }

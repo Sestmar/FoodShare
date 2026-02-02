@@ -9,7 +9,8 @@ data class UserEntity(
     val email: String,
     val name: String,
     val role: String,
-    val password: String
+    val password: String,
+    val phone: String = "600123456"
 )
 
 @Entity(tableName = "donations")
@@ -23,5 +24,10 @@ data class DonationEntity(
     val isReserved: Boolean = false,
     val reservedBy: String? = null,
     val pickupCode: String? = null,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val isCancelled: Boolean = false,
+
+    // TELÉFONOS DE CONTACTO (BIDIRECCIONAL)
+    val contactPhone: String = "911223344", // Teléfono del Comercio (Fijo)
+    val userPhone: String? = null           // Teléfono del Voluntario (Se guarda al reservar)
 )

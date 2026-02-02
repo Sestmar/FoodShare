@@ -30,22 +30,30 @@ class AdminViewModel @Inject constructor(
 
     /**
      * RA5.c: Establezco filtros sobre los valores a presentar.
-     * Combino el flujo de datos de la BBDD con el filtro seleccionado por el usuario
-     * para ofrecer una interfaz reactiva.
+     * CORRECCIÓN: Los cancelados NO deben salir ni en "Disponibles" ni en "Reservados" de la lista normal.
      */
     val donationList = repository.getActiveDonations().combine(_currentFilter) { list, filter ->
+        // Filtro base: Ocultar cancelados de la lista de gestión diaria
+        val activeList = list.filter { !it.isCancelled }
+
         when (filter) {
-            "DISPONIBLES" -> list.filter { !it.isReserved }
-            "RESERVADOS" -> list.filter { it.isReserved }
-            else -> list
+            "DISPONIBLES" -> activeList.filter { !it.isReserved }
+            "RESERVADOS" -> activeList.filter { it.isReserved }
+            else -> activeList
         }
+    }
+
+    // --- NUEVO: HISTORIAL DEL ADMINISTRADOR (Solución al error Unresolved reference) ---
+    // Muestra todo lo que ha salido del sistema activo: Entregado (Completed) o Cancelado
+    val adminHistory = repository.getAllHistory().map { list ->
+        list.filter { it.isCompleted || it.isCancelled }
     }
 
     fun setFilter(filter: String) {
         _currentFilter.value = filter
     }
 
-    // RA1.f: Modifico el código para adaptar la creación de entidades con imagen y cantidad.
+    // RA1.f: Modifico el código para adaptar la creación de entidades.
     fun addDonation(title: String, desc: String, quantity: String, imageUrl: String) {
         viewModelScope.launch {
             val newDonation = DonationEntity(
@@ -55,23 +63,35 @@ class AdminViewModel @Inject constructor(
                 imageUrl = imageUrl,
                 donorName = "FoodShare Local",
                 isReserved = false,
-                isCompleted = false
+                isCompleted = false,
+                isCancelled = false, // Empezamos limpios
+                contactPhone = "911223344" // Teléfono fijo del comercio para que el cliente llame
             )
             repository.addDonation(newDonation)
         }
     }
 
+    // NUEVA FUNCIÓN: Actualizar producto existente
+    fun updateDonation(donation: DonationEntity) {
+        viewModelScope.launch {
+            repository.updateDonation(donation)
+        }
+    }
+
     fun deleteDonation(donation: DonationEntity) {
         viewModelScope.launch {
-            repository.deleteDonation(donation)
+            if (donation.isReserved && !donation.isCompleted && !donation.isCancelled) {
+                // Soft Delete: Cancelamos para que el usuario lo sepa y no rompa su historial
+                repository.cancelDonation(donation.id)
+            } else {
+                // Hard Delete: Borramos de verdad si está libre
+                repository.deleteDonation(donation)
+            }
         }
     }
 
     /**
      * RA2.f / RA3.d: Implemento la validación de seguridad (PIN/QR).
-     * Si el código coincide, marco la transacción como completada (Soft Delete).
-     *
-     * @return true si el código coincide y se procesa la entrega.
      */
     fun completeDonation(donation: DonationEntity, inputCode: String): Boolean {
         if (donation.pickupCode == inputCode) {
@@ -85,22 +105,17 @@ class AdminViewModel @Inject constructor(
 
     /**
      * RA5.d: Incluyo valores calculados y recuentos totales.
-     * Proceso el historial completo para diferenciar los tres estados clave del negocio:
-     * 1. Disponibles (Stock actual)
-     * 2. Reservados (En tránsito, pendiente de entrega)
-     * 3. Completados (Ventas finalizadas con éxito)
-     *
-     * @return Flow con Triple(Disponibles, Reservados, Completados)
+     * CORRECCIÓN PROBLEMA 2: Excluyo explícitamente los cancelados del conteo de Reservados.
      */
     fun getStatsFlow(): Flow<Triple<Int, Int, Int>> {
         return repository.getAllHistory().map { list ->
-            // Disponibles: Ni reservados ni completados
-            val available = list.count { !it.isReserved && !it.isCompleted }
+            // Disponibles: Libres y NO cancelados
+            val available = list.count { !it.isReserved && !it.isCompleted && !it.isCancelled }
 
-            // Reservados: Reservados pero NO completados (Pendientes)
-            val reserved = list.count { it.isReserved && !it.isCompleted }
+            // Reservados: En proceso y NO cancelados (Aquí estaba el error)
+            val reserved = list.count { it.isReserved && !it.isCompleted && !it.isCancelled }
 
-            // Completados: Ventas cerradas
+            // Completados
             val completed = list.count { it.isCompleted }
 
             Triple(available, reserved, completed)

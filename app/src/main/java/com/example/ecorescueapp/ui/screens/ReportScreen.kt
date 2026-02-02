@@ -30,6 +30,7 @@ import android.content.Intent
 import android.provider.MediaStore
 import com.example.ecorescueapp.ui.component.FloatingFoodBackground
 import com.example.ecorescueapp.ui.component.PieChart
+import com.example.ecorescueapp.ui.components.FloatingParticles
 import com.example.ecorescueapp.ui.theme.AcentoNaranja
 import com.example.ecorescueapp.ui.theme.VerdePrincipal
 
@@ -52,7 +53,7 @@ fun ReportScreen(
         containerColor = Color(0xFF0D0D0D),
         topBar = {
             TopAppBar(
-                title = { Text("Informe de Impacto 📈", fontWeight = FontWeight.Bold) },
+                title = { Text("Informe de Impacto", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF0D0D0D),
                     titleContentColor = Color.White,
@@ -67,7 +68,17 @@ fun ReportScreen(
         }
     ) { padding ->
         // RA4.g: Integro el fondo animado para mantener consistencia estética
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // ✨ NUEVO: partículas discretas
+            FloatingParticles(
+                particleCount = 12,
+                color = Color.White.copy(alpha = 0.20f)
+            )
+
             FloatingFoodBackground()
 
             Column(

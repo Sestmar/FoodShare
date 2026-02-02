@@ -21,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.ecorescueapp.ui.component.FloatingFoodBackground
 import com.example.ecorescueapp.ui.components.DonationCard
+import com.example.ecorescueapp.ui.components.FloatingParticles
 import com.example.ecorescueapp.ui.components.InfoDialog
 import com.example.ecorescueapp.ui.navigation.Screen
 import com.example.ecorescueapp.ui.theme.AcentoNaranja
@@ -90,13 +91,15 @@ fun UserHomeScreen(
             )
         }
     ) { padding ->
-        // Contenedor principal con Z-Ordering para el fondo animado
         Box(modifier = Modifier.fillMaxSize()) {
 
-            // --- CAPA 1: FONDO ANIMADO ---
+            FloatingParticles(
+                particleCount = 35,
+                color = Color(0xFF00E5FF)
+            )
+
             FloatingFoodBackground()
 
-            // --- CAPA 2: CONTENIDO SCROLLABLE ---
             LazyColumn(
                 modifier = Modifier
                     .padding(padding)

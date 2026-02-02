@@ -29,14 +29,24 @@ class EcoRepository @Inject constructor(
         ecoDao.insertDonation(donation)
     }
 
-    // Eliminar una donación (Manual)
+    // Actualizar una donación existente (Edición)
+    suspend fun updateDonation(donation: DonationEntity) {
+        ecoDao.updateDonation(donation)
+    }
+
+    // Eliminar una donación (Hard Delete - Borrado Total)
     suspend fun deleteDonation(donation: DonationEntity) {
         ecoDao.deleteDonation(donation)
     }
 
-    // Reservar donación (Fase 1)
-    suspend fun reserveDonation(id: Int, userName: String, code: String) {
-        ecoDao.updateReservation(id, true, userName, code)
+    // Cancelar una donación (Soft Delete - Marcar como cancelada)
+    suspend fun cancelDonation(id: Int) {
+        ecoDao.cancelDonation(id)
+    }
+
+    // Reservar donación (CORREGIDO: Ahora guarda el teléfono del usuario)
+    suspend fun reserveDonation(id: Int, userName: String, code: String, userPhone: String) {
+        ecoDao.updateReservation(id, true, userName, code, userPhone)
     }
 
     // Completar/Entregar donación (Fase 2)
@@ -56,4 +66,7 @@ class EcoRepository @Inject constructor(
     suspend fun login(email: String): UserEntity? {
         return ecoDao.getUserByEmail(email)
     }
+
+    // funcion puente para buscar el telefono
+    suspend fun getUserPhone(name: String): String? = ecoDao.getUserPhoneByName(name)
 }
