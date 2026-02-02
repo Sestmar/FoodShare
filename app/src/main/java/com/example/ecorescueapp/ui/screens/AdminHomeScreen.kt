@@ -1,7 +1,11 @@
 package com.example.ecorescueapp.ui.screens
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,7 +48,7 @@ import com.journeyapps.barcodescanner.ScanOptions
 val GlassBackground = Color.White.copy(alpha = 0.1f)
 val GlassBorder = Color.White.copy(alpha = 0.2f)
 val TextHintColor = Color.LightGray
-val NeonGreen = Color(0xFF4ADE80) // Un verde más vibrante para el botón principal
+val NeonGreen = Color(0xFF4ADE80)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +58,7 @@ fun AdminHomeScreen(
 ) {
     val context = LocalContext.current
 
-    // --- ESTADOS (Lógica Original Intacta) ---
+    // --- ESTADOS ---
     val donationList by viewModel.donationList.collectAsState(initial = emptyList())
 
     // Formulario
@@ -74,6 +78,21 @@ fun AdminHomeScreen(
     var showHelp by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
 
+    // --- 1. LANZADOR DE RECONOCIMIENTO DE VOZ (NUEVO) ---
+    val voiceLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!results.isNullOrEmpty()) {
+                // Añadimos el texto dictado a la descripción existente
+                val text = results[0]
+                description = if (description.isEmpty()) text else "$description $text"
+            }
+        }
+    }
+
     // --- ESCÁNER QR ---
     val scanLauncher = rememberLauncherForActivityResult(contract = ScanContract()) { result ->
         if (result.contents != null) {
@@ -92,7 +111,7 @@ fun AdminHomeScreen(
         }
     }
 
-    // --- DIÁLOGOS (Respetando lógica, estética mínima oscura) ---
+    // --- DIÁLOGOS ---
     if (showValidateDialog && itemToValidate != null) {
         AlertDialog(
             onDismissRequest = { showValidateDialog = false },
@@ -151,12 +170,27 @@ fun AdminHomeScreen(
     }
 
     if (showDeleteDialog && itemToDelete != null) {
-        // Lógica de borrado original...
+        val isReserved = !itemToDelete?.reservedBy.isNullOrEmpty()
+
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             containerColor = Color(0xFF1E1E1E),
-            title = { Text("¿Eliminar?", color = Color.White) },
-            text = { Text("Se eliminará '${itemToDelete?.title}' permanentemente.", color = Color.Gray) },
+            title = {
+                Text(
+                    text = if (isReserved) "⚠️ ¡PRODUCTO RESERVADO!" else "¿Eliminar Oferta?",
+                    color = if (isReserved) AcentoNaranja else Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = if (isReserved)
+                        "El cliente '${itemToDelete?.reservedBy}' ya ha reservado este producto. Si lo eliminas, se cancelará su pedido. ¿Estás seguro?"
+                    else
+                        "Se eliminará '${itemToDelete?.title}' permanentemente del listado.",
+                    color = Color.Gray
+                )
+            },
             confirmButton = {
                 Button(
                     onClick = {
@@ -164,7 +198,7 @@ fun AdminHomeScreen(
                         showDeleteDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) { Text("BORRAR", color = Color.White) }
+                ) { Text("BORRAR DEFINITIVAMENTE", color = Color.White) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar", color = Color.Gray) }
@@ -175,16 +209,15 @@ fun AdminHomeScreen(
     if (showHelp) {
         InfoDialog(
             title = "Ayuda Admin",
-            desc = "Usa las pestañas superiores para cambiar entre crear ofertas y gestionar las existentes.",
+            desc = "Usa las pestañas superiores para cambiar entre crear ofertas y gestionar las existentes. Desliza una tarjeta a la izquierda para borrarla.",
             onDismiss = { showHelp = false }
         )
     }
 
     // --- ESTRUCTURA PRINCIPAL DE LA PANTALLA ---
     Scaffold(
-        containerColor = Color(0xFF0D0D0D), // Fondo base muy oscuro
+        containerColor = Color(0xFF0D0D0D),
         topBar = {
-            // TopBar transparente para que se vea el fondo
             TopAppBar(
                 title = { Text("FoodShare Admin", color = Color.White.copy(alpha = 0.9f), fontWeight = FontWeight.SemiBold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -197,10 +230,9 @@ fun AdminHomeScreen(
                         onDismissRequest = { menuExpanded = false },
                         modifier = Modifier.background(Color(0xFF1E1E1E))
                     ) {
-                        // opciones del menñu desplegable (ADMIN)
                         DropdownMenuItem(
                             text = { Text("Historial de Pedidos", color = Color.White) },
-                            leadingIcon = { Icon(Icons.Default.History, null, tint = Color.White) }, // Icono opcional
+                            leadingIcon = { Icon(Icons.Default.History, null, tint = Color.White) },
                             onClick = {
                                 menuExpanded = false
                                 navController.navigate(Screen.AdminHistory.route)
@@ -253,7 +285,6 @@ fun AdminHomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // --- TOGGLE SUPERIOR (Publicar | Gestionar) ---
                 Spacer(modifier = Modifier.height(8.dp))
                 CustomToggleBar(
                     isPublishMode = !showListMode,
@@ -263,9 +294,8 @@ fun AdminHomeScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 if (!showListMode) {
-                    // --- MODO PUBLICAR (Estética del Boceto) ---
+                    // --- MODO PUBLICAR ---
 
-                    // Título Grande
                     Text(
                         text = if (donationToEdit == null) "Nueva Oferta" else "Editar Oferta",
                         fontSize = 28.sp,
@@ -276,30 +306,40 @@ fun AdminHomeScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Input: Producto
                     GlassTextField(
                         value = title,
                         onValueChange = { title = it },
                         placeholder = "Producto (Ej: Pan)",
-                        icon = Icons.Default.Restaurant // Icono de comida
+                        icon = Icons.Default.Restaurant
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Input: Descripción (Con icono de microfono)
+                    // --- 2. CAMPO DESCRIPCIÓN CON VOZ CONECTADA ---
                     GlassTextField(
                         value = description,
                         onValueChange = { description = it },
                         placeholder = "Descripción",
-                        icon = null, // No icono a la izquierda
-                        trailingIcon = Icons.Default.Mic, // Icono a la derecha
+                        icon = null,
+                        trailingIcon = Icons.Default.Mic,
+                        // Aquí conectamos el click con el lanzador de voz
+                        onTrailingIconClick = {
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Describe el producto...")
+                            }
+                            try {
+                                voiceLauncher.launch(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "No se admite entrada de voz", Toast.LENGTH_SHORT).show()
+                            }
+                        },
                         singleLine = false,
-                        modifier = Modifier.height(120.dp) // Más alto
+                        modifier = Modifier.height(120.dp)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Input: Cantidad
                     GlassTextField(
                         value = quantity,
                         onValueChange = { quantity = it },
@@ -310,7 +350,6 @@ fun AdminHomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Input: URL Foto
                     GlassTextField(
                         value = imageUrl,
                         onValueChange = { imageUrl = it },
@@ -318,9 +357,8 @@ fun AdminHomeScreen(
                         icon = Icons.Default.CameraAlt
                     )
 
-                    Spacer(modifier = Modifier.weight(1f)) // Empuja el botón al fondo
+                    Spacer(modifier = Modifier.weight(1f))
 
-                    // --- BOTÓN GRANDE VERDE ---
                     Button(
                         onClick = {
                             if (title.isNotEmpty() && quantity.isNotEmpty()) {
@@ -334,17 +372,16 @@ fun AdminHomeScreen(
                                     viewModel.updateDonation(updated)
                                     Toast.makeText(context, "Editado", Toast.LENGTH_SHORT).show()
                                 }
-                                // Limpieza
                                 title = ""; description = ""; quantity = ""; imageUrl = ""; donationToEdit = null
-                                showListMode = true // Ir a la lista al terminar
+                                showListMode = true
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
-                            .shadow(12.dp, RoundedCornerShape(50), spotColor = NeonGreen), // Resplandor
+                            .shadow(12.dp, RoundedCornerShape(50), spotColor = NeonGreen),
                         colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
-                        shape = RoundedCornerShape(50) // Botón pastilla
+                        shape = RoundedCornerShape(50)
                     ) {
                         Text(
                             text = if (donationToEdit == null) "+ PUBLICAR AHORA" else "GUARDAR CAMBIOS",
@@ -365,34 +402,74 @@ fun AdminHomeScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                 } else {
-                    // --- MODO GESTIONAR (LISTA) ---
-                    // Mantenemos la lista funcional pero limpia
+                    // --- MODO GESTIONAR ---
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
                         items(donationList, key = { it.id }) { donation ->
-                            // Reutilizamos tu DonationCard existente
-                            DonationCard(
-                                donation = donation,
-                                isAdmin = true,
-                                onActionClick = {
-                                    itemToValidate = donation
-                                    showValidateDialog = true
+
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                        itemToDelete = donation
+                                        showDeleteDialog = true
+                                        return@rememberSwipeToDismissBoxState false
+                                    }
+                                    false
+                                }
+                            )
+
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                enableDismissFromEndToStart = true,
+                                backgroundContent = {
+                                    val backgroundColor = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                                        Color.Red.copy(alpha = 0.8f)
+                                    } else {
+                                        Color.Transparent
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(backgroundColor)
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = Alignment.CenterEnd
+                                    ) {
+                                        if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Eliminar",
+                                                tint = Color.White
+                                            )
+                                        }
+                                    }
                                 },
-                                onEditClick = {
-                                    title = donation.title
-                                    description = donation.description
-                                    quantity = donation.quantity
-                                    imageUrl = donation.imageUrl ?: ""
-                                    donationToEdit = donation
-                                    showListMode = false // Volver al formulario
+                                content = {
+                                    DonationCard(
+                                        donation = donation,
+                                        isAdmin = true,
+                                        onActionClick = {
+                                            itemToValidate = donation
+                                            showValidateDialog = true
+                                        },
+                                        onEditClick = {
+                                            title = donation.title
+                                            description = donation.description
+                                            quantity = donation.quantity
+                                            imageUrl = donation.imageUrl ?: ""
+                                            donationToEdit = donation
+                                            showListMode = false
+                                        }
+                                    )
                                 }
                             )
                         }
                     }
 
-                    // Floating Action Button para volver a publicar si estamos en lista
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
                         FloatingActionButton(
                             onClick = { showListMode = false },
@@ -409,12 +486,12 @@ fun AdminHomeScreen(
 }
 
 // -------------------------------------------------------------------------
-// --- COMPONENTES VISUALES PERSONALIZADOS (ESTILO DESIGN IA) ---
+// --- COMPONENTES VISUALES ---
 // -------------------------------------------------------------------------
 
 /**
- * Campo de texto estilo "Glass" (Vidrio):
- * Fondo translúcido, bordes muy redondeados (Pill shape), icono integrado.
+ * Campo de texto estilo "Glass".
+ * 3. AHORA ACEPTA onTrailingIconClick para el micro.
  */
 @Composable
 fun GlassTextField(
@@ -423,6 +500,7 @@ fun GlassTextField(
     placeholder: String,
     icon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
+    onTrailingIconClick: (() -> Unit)? = null, // <--- NUEVO PARÁMETRO
     singleLine: Boolean = true,
     keyboardType: KeyboardType = KeyboardType.Text,
     modifier: Modifier = Modifier
@@ -435,7 +513,16 @@ fun GlassTextField(
             { Icon(icon, contentDescription = null, tint = Color.LightGray) }
         } else null,
         trailingIcon = if (trailingIcon != null) {
-            { Icon(trailingIcon, contentDescription = null, tint = Color.LightGray) }
+            {
+                // Si pasamos una acción, es un botón, si no, solo un icono decorativo
+                if (onTrailingIconClick != null) {
+                    IconButton(onClick = onTrailingIconClick) {
+                        Icon(trailingIcon, contentDescription = "Dictar", tint = Color.LightGray)
+                    }
+                } else {
+                    Icon(trailingIcon, contentDescription = null, tint = Color.LightGray)
+                }
+            }
         } else null,
         singleLine = singleLine,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -446,21 +533,17 @@ fun GlassTextField(
             focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
             cursorColor = NeonGreen,
-            focusedIndicatorColor = Color.Transparent, // Sin línea inferior
+            focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent
         ),
-        shape = RoundedCornerShape(24.dp), // Bordes muy redondeados
+        shape = RoundedCornerShape(24.dp),
         modifier = modifier
             .fillMaxWidth()
-            .border(1.dp, GlassBorder, RoundedCornerShape(24.dp)) // Borde sutil
+            .border(1.dp, GlassBorder, RoundedCornerShape(24.dp))
     )
 }
 
-/**
- * Barra de pestañas personalizada estilo "Segmented Control".
- * Fondo gris oscuro, pastilla verde que se mueve (simulada por color).
- */
 @Composable
 fun CustomToggleBar(
     isPublishMode: Boolean,
@@ -470,19 +553,18 @@ fun CustomToggleBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp)
-            .clip(RoundedCornerShape(50)) // Forma completa de pastilla
-            .background(Color(0xFF2A2A2A)) // Fondo gris oscuro del contenedor
+            .clip(RoundedCornerShape(50))
+            .background(Color(0xFF2A2A2A))
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Botón Publicar
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(50))
-                .background(if (isPublishMode) GlassBackground.copy(alpha = 0.3f) else Color.Transparent) // Highlight sutil
+                .background(if (isPublishMode) GlassBackground.copy(alpha = 0.3f) else Color.Transparent)
                 .clickable { onToggle(true) }
         ) {
             Text(
@@ -492,7 +574,6 @@ fun CustomToggleBar(
             )
         }
 
-        // Botón Gestionar
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier

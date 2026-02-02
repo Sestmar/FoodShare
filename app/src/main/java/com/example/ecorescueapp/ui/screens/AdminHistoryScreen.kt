@@ -21,9 +21,8 @@ import com.example.ecorescueapp.ui.viewmodel.AdminViewModel
 
 /**
  * Pantalla de Historial del Administrador.
- * Muestra todos los pedidos que han salido del sistema activo:
- * - Pedidos Entregados (Completados)
- * - Pedidos Cancelados (Por el Admin o por el Cliente)
+ * Muestra pedidos COMPLETADOS (Entregados) y CANCELADOS.
+ * Al estar finalizados, no se permite ninguna acción (solo lectura).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +30,7 @@ fun AdminHistoryScreen(
     navController: NavController,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    // Obtenemos la lista del historial desde el ViewModel
+    // Obtenemos la lista del historial (Pedidos completados o cancelados)
     val historyList by viewModel.adminHistory.collectAsState(initial = emptyList())
 
     Scaffold(
@@ -50,6 +49,7 @@ fun AdminHistoryScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
 
+            // Fondo visual consistente
             FloatingParticles(
                 particleCount = 20,
                 color = Color.White.copy(alpha = 0.5f)
@@ -73,15 +73,15 @@ fun AdminHistoryScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(historyList, key = { it.id }) { donation ->
-                        // Reutilizamos la DonationCard.
-                        // Al pasar isAdmin=true, mostrará los datos del cliente.
-                        // La tarjeta ya sabe pintarse de ROJO si está cancelada.
+
+                        // LÓGICA AUTOMÁTICA:
+                        // Simplemente pasamos la donación.
+                        // Como en el DAO estos items tienen isCompleted=true o isCancelled=true,
+                        // la DonationCard sabrá automáticamente que NO debe pintar botones.
+
                         DonationCard(
                             donation = donation,
-                            isAdmin = true,
-                            // En el historial no permitimos editar ni validar, solo ver.
-                            onActionClick = { },
-                            onEditClick = { }
+                            isAdmin = true
                         )
                     }
                 }

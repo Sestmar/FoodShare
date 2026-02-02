@@ -20,11 +20,6 @@ import com.example.ecorescueapp.ui.components.DonationCard
 import com.example.ecorescueapp.ui.components.FloatingParticles
 import com.example.ecorescueapp.ui.viewmodel.UserViewModel
 
-/**
- * RA4.g: Diseño visual atractivo.
- * Pantalla de historial con estética Cyberpunk unificada.
- * Muestra los pedidos activos con opciones de Contacto y Cancelación.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserHistoryScreen(
@@ -34,39 +29,22 @@ fun UserHistoryScreen(
     val myOrders by viewModel.allHistory.collectAsState(initial = emptyList())
     val cyanCyber = Color(0xFF00E5FF)
 
-    // Estados para el diálogo de cancelación
+    // Estados diálogo
     var showCancelDialog by remember { mutableStateOf(false) }
     var itemToCancel by remember { mutableStateOf<DonationEntity?>(null) }
 
-    // --- DIÁLOGO DE CONFIRMACIÓN DE CANCELACIÓN ---
     if (showCancelDialog && itemToCancel != null) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
             containerColor = Color(0xFF1E1E1E),
             title = { Text("¿Cancelar reserva?", color = Color.Red, fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    "Vas a cancelar tu reserva de '${itemToCancel?.title}'.\nEl comercio será notificado.",
-                    color = Color.Gray
-                )
-            },
+            text = { Text("Se notificará al comercio.", color = Color.Gray) },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.cancelReservation(itemToCancel!!)
-                        showCancelDialog = false
-                        itemToCancel = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
+                Button(onClick = { viewModel.cancelReservation(itemToCancel!!); showCancelDialog = false; itemToCancel = null }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) {
                     Text("SÍ, CANCELAR", color = Color.White)
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showCancelDialog = false }) {
-                    Text("Volver", color = Color.White)
-                }
-            }
+            dismissButton = { TextButton(onClick = { showCancelDialog = false }) { Text("Volver", color = Color.White) } }
         )
     }
 
@@ -75,42 +53,23 @@ fun UserHistoryScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Mis Pedidos", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D0D0D),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = cyanCyber
-                ),
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
-                    }
-                }
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0D0D0D), titleContentColor = Color.White, navigationIconContentColor = cyanCyber),
+                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }
             )
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-
-            FloatingParticles(
-                particleCount = 30,
-                color = Color(0xFF00E5FF)
-            )
-
+            FloatingParticles(particleCount = 30, color = cyanCyber)
             FloatingFoodBackground()
 
-            LazyColumn(
-                modifier = Modifier.padding(16.dp).fillMaxSize()
-            ) {
-
+            LazyColumn(modifier = Modifier.padding(16.dp).fillMaxSize()) {
                 if (myOrders.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxSize().padding(top=100.dp), contentAlignment = Alignment.Center) {
-                            Text("No tienes pedidos activos.", color = Color.Gray)
-                        }
-                    }
+                    item { Box(modifier = Modifier.fillMaxSize().padding(top=100.dp), contentAlignment = Alignment.Center) { Text("No tienes pedidos.", color = Color.Gray) } }
                 }
 
                 items(myOrders) { item ->
-                    // Usamos el componente genérico DonationCard que ya tiene toda la lógica
+                    // SIMPLIFICACIÓN TOTAL: Pasamos la acción siempre.
+                    // La DonationCard decidirá si muestra el botón o no basándose en item.isCompleted
                     DonationCard(
                         donation = item,
                         isAdmin = false,
