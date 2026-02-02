@@ -15,7 +15,7 @@
 Para probar la aplicación en tu dispositivo Android sin necesidad de compilar:
 
 📂 **[Descargar APK Firmado (v1.0)](./releases/app-release.apk)**
-*(Ruta en repositorio: `/releases/app-release.apk`)*
+*(Ruta en repositorio: `/releases/apk`)*
 
 ---
 
